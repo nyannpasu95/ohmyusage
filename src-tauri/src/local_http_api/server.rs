@@ -682,9 +682,7 @@ mod tests {
             .expect("write second chunk");
 
         let mut response = String::new();
-        client
-            .read_to_string(&mut response)
-            .expect("read response");
+        client.read_to_string(&mut response).expect("read response");
         server.join().expect("join server thread");
 
         assert!(response.starts_with("HTTP/1.1 204"));
