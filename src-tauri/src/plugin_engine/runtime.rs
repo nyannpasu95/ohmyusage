@@ -701,6 +701,16 @@ fn error_output(plugin: &LoadedPlugin, message: String) -> PluginOutput {
     }
 }
 
+/// User-facing output for a probe that panicked in native code. Emitted by
+/// the batch runner so the frontend settles immediately instead of waiting
+/// for the batch watchdog.
+pub fn panic_output(plugin: &LoadedPlugin) -> PluginOutput {
+    error_output(
+        plugin,
+        "The plugin crashed, try again or contact plugin author.".to_string(),
+    )
+}
+
 fn extract_error_string(ctx: &Ctx<'_>) -> String {
     let exc = ctx.catch();
     if exc.is_null() || exc.is_undefined() {
@@ -788,6 +798,20 @@ mod tests {
             Some(MetricLine::Badge { text, .. }) => text.clone(),
             other => panic!("expected error badge, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn panic_output_is_a_friendly_error_badge() {
+        let plugin = test_plugin("");
+        let output = panic_output(&plugin);
+
+        assert_eq!(output.provider_id, "test");
+        assert_eq!(output.display_name, "Test");
+        assert!(output.plan.is_none());
+        assert_eq!(
+            error_text(output),
+            "The plugin crashed, try again or contact plugin author."
+        );
     }
 
     #[test]

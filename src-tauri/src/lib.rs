@@ -375,6 +375,18 @@ async fn start_probe_batch(
                     }
                     Err(_) => {
                         log::error!("probe {} panicked", plugin_id);
+                        // Emit an error result so the frontend settles
+                        // immediately instead of waiting for the watchdog.
+                        let output = plugin_engine::runtime::panic_output(&plugin);
+                        if let Err(e) = handle.emit(
+                            "probe:result",
+                            ProbeResult {
+                                batch_id: bid.clone(),
+                                output,
+                            },
+                        ) {
+                            log::warn!("failed to emit probe:result for panicked probe: {}", e);
+                        }
                     }
                 }
 

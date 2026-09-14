@@ -19,7 +19,7 @@
 2. Source stores are updated from bootstrap/settings/probe actions.
 3. Each successful probe result includes its batch ID and the provider's previous data. `App.tsx` compares the selected menu bar metric and records real usage increases.
 4. When a batch completes, the provider with the largest normalized increase becomes the menu bar provider. The panel's active page does not change.
-5. If a provider's result never arrives (result events can be dropped after the Mac wakes from sleep), the batch-complete event reconciles the missing ones: they stop loading and are retried on the next refresh. A watchdog timer does the same if the batch-complete event itself is lost.
+5. If a provider's result never arrives (result events can be dropped after the Mac wakes from sleep), the batch-complete event reconciles the missing ones: they stop loading and are retried on the next refresh. A watchdog timer does the same if the batch-complete event itself is lost. A probe that panics in native code emits an error result immediately, so it never waits on this reconciliation path.
 6. After the Mac wakes from sleep, the auto-update schedule catches up within seconds of becoming overdue instead of waiting out the full interval.
 7. Derived hooks recompute view models from source state.
 8. `App.tsx` passes derived values directly to `AppShell` and `AppContent`.

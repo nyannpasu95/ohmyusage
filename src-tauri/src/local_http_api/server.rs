@@ -177,12 +177,9 @@ fn handle_connection(mut stream: TcpStream, _permit: ConnectionPermit) {
     let _ = stream.set_read_timeout(Some(CONNECTION_TIMEOUT));
     let _ = stream.set_write_timeout(Some(CONNECTION_TIMEOUT));
 
-    let mut buf = [0u8; 4096];
-    let n = match stream.read(&mut buf) {
-        Ok(n) => n,
-        Err(_) => return,
+    let Some(request) = read_request_head(&mut stream) else {
+        return;
     };
-    let request = String::from_utf8_lossy(&buf[..n]);
 
     let first_line = request.lines().next().unwrap_or("");
     let mut parts = first_line.split_whitespace();
@@ -213,6 +210,40 @@ fn handle_connection(mut stream: TcpStream, _permit: ConnectionPermit) {
     };
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
+}
+
+/// Upper bound on the request head (request line + headers) we will buffer.
+/// Requests here are tiny GET/OPTIONS calls; anything larger is rejected.
+const MAX_REQUEST_HEAD_BYTES: usize = 16 * 1024;
+
+/// Read the request head from the stream. A single `read` call is not
+/// guaranteed to return the full request — TCP may deliver it in fragments —
+/// so loop until the header terminator arrives, the peer closes, or the cap
+/// is hit.
+fn read_request_head(stream: &mut TcpStream) -> Option<String> {
+    let mut buf: Vec<u8> = Vec::with_capacity(4096);
+    let mut chunk = [0u8; 4096];
+    loop {
+        if buf.windows(4).any(|w| w == b"\r\n\r\n") || buf.windows(2).any(|w| w == b"\n\n") {
+            break;
+        }
+        if buf.len() >= MAX_REQUEST_HEAD_BYTES {
+            log::warn!(
+                "local HTTP API request head exceeded {} bytes; dropping connection",
+                MAX_REQUEST_HEAD_BYTES
+            );
+            return None;
+        }
+        match stream.read(&mut chunk) {
+            Ok(0) => break, // peer closed; parse whatever arrived
+            Ok(n) => buf.extend_from_slice(&chunk[..n]),
+            Err(_) => return None,
+        }
+    }
+    if buf.is_empty() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&buf).into_owned())
 }
 
 fn parse_headers(request: &str) -> std::collections::HashMap<String, String> {
@@ -620,5 +651,43 @@ mod tests {
 
         assert!(resp.starts_with("HTTP/1.1 503"));
         assert!(resp.contains(r#""error":"server_busy""#));
+    }
+
+    #[test]
+    fn fragmented_request_headers_are_fully_read() {
+        // Regression: a single `read` call is not guaranteed to return the
+        // whole request. If the Origin header arrives in a second TCP segment,
+        // the server must still see it (previously such requests were parsed
+        // from whatever the first read returned).
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");
+        let addr = listener.local_addr().expect("local addr");
+
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().expect("accept");
+            let limiter = ConnectionLimiter::new(1);
+            let permit = limiter.acquire().expect("permit");
+            handle_connection(stream, permit);
+        });
+
+        let mut client = TcpStream::connect(addr).expect("connect");
+        client
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .expect("set read timeout");
+        client
+            .write_all(b"OPTIONS /v1/usage HTTP/1.1\r\nHost: 127.0.0.1\r\n")
+            .expect("write first chunk");
+        std::thread::sleep(Duration::from_millis(50));
+        client
+            .write_all(b"Origin: http://localhost:3000\r\n\r\n")
+            .expect("write second chunk");
+
+        let mut response = String::new();
+        client
+            .read_to_string(&mut response)
+            .expect("read response");
+        server.join().expect("join server thread");
+
+        assert!(response.starts_with("HTTP/1.1 204"));
+        assert!(response.contains("Access-Control-Allow-Origin: http://localhost:3000"));
     }
 }
