@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [tikuwa]
+    branches: [main]
   pull_request:
-    branches: [tikuwa]
+    branches: [main]
 
 permissions:
   contents: read

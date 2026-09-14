@@ -29,7 +29,7 @@ By submitting a pull request, you agree that your contribution is licensed under
 2. Create a branch (`feat/my-change`, `fix/some-bug`, etc.)
 3. Make your changes
 4. Run `bun run build` and `bun run test` to verify nothing is broken
-5. Open a PR against `tikuwa`
+5. Open a PR against `main`
 
 ### Add a provider plugin
 

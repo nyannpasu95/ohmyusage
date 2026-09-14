@@ -89,7 +89,7 @@ OhMyUsage is a community fork of [OpenUsage](https://github.com/robinebers/openu
 <details>
 <summary><strong>Build from source</strong></summary>
 
-> **Warning**: The `tikuwa` branch is the active development branch and may not be stable. Users are advised to use tagged versions for stable builds. Tagged versions are fully tested while `tikuwa` may contain unreleased features.
+> **Warning**: The `main` branch is the active development branch and may not be stable. Users are advised to use tagged versions for stable builds. Tagged versions are fully tested while `main` may contain unreleased features.
 
 ### Stack
 

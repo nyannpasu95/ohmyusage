@@ -2,13 +2,13 @@
 
 Version: 0.40 (2026-07-10)
 
-> OhMyUsage is a Tauri desktop app for tracking AI provider usage across plugins. This is a community fork of OpenUsage, maintained independently on the `tikuwa` branch.
+> OhMyUsage is a Tauri desktop app for tracking AI provider usage across plugins. This project originated as a fork of OpenUsage and is now maintained independently on the `main` branch.
 
 ## Repo & branch model
 
-- This repo is a **fork** of [robinebers/openusage](https://github.com/robinebers/openusage).
-- The only maintained branch is **`tikuwa`**. It is the source of truth for the OhMyUsage app.
-- `main` and `stable-0.6.28` are inherited from upstream and are **not maintained here**. Do not cut releases or run automation against them.
+- This repo originated as a **fork** of [robinebers/openusage](https://github.com/robinebers/openusage) and has since become an independent project.
+- The only maintained branch is **`main`** (formerly `tikuwa`). It is the source of truth for the OhMyUsage app and is the GitHub default branch.
+- The upstream repo's branches (including its `main`) are **not maintained here**. Do not cut releases or run automation against them.
 - The upstream `swift` rewrite and its release lane are **out of scope**. OhMyUsage is a single Tauri edition.
 - Do not sync or merge with upstream unless explicitly asked. Pull specific commits by cherry-pick if needed.
 
@@ -20,7 +20,7 @@ Version: 0.40 (2026-07-10)
 
 ## Releases
 
-- Releases are cut from a `tikuwa` commit by pushing a `vX.Y.Z` tag, which triggers `.github/workflows/publish.yml`.
+- Releases are cut from a `main` commit by pushing a `vX.Y.Z` tag, which triggers `.github/workflows/publish.yml`.
 - Update endpoints point at this fork's GitHub releases: `https://github.com/nyannpasu95/ohmyusage/releases/latest/download/latest.json`.
 - Builds are **ad-hoc signed** (no Apple Developer certificate on this fork). The first-launch README note tells users to clear the quarantine attribute.
 - Keep the version consistent across `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`. The publish workflow validates all three against the tag.
